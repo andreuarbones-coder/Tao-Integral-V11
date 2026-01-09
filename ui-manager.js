@@ -40,8 +40,7 @@ export const UI = {
                 setTimeout(() => document.getElementById('loadingIndicator')?.classList.add('hidden'), 1000);
             } else {
                 if(ind) ind.innerText = "Desconectado";
-                // Intento de login anónimo o con token se maneja en AuthService, 
-                // pero aquí podríamos forzar un login si quisiéramos.
+                // Intento de login anónimo o con token se maneja en AuthService
                 AuthService.signIn(); 
             }
         });
@@ -54,7 +53,7 @@ export const UI = {
         document.getElementById('branchToggleBtn').onclick = () => this.toggleBranch();
         document.getElementById('sidebarOverlay').onclick = () => this.toggleSidebar(false);
         
-        // Modales
+        // Modales (Cierre)
         document.querySelectorAll('.modal-close').forEach(b => b.onclick = () => this.closeModal());
         const overlay = document.getElementById('modalOverlay');
         if(overlay) overlay.onclick = (e) => { if(e.target === overlay) this.closeModal(); };
@@ -63,8 +62,11 @@ export const UI = {
         document.getElementById('mainFab').onclick = () => this.handleFab();
 
         // Buscadores
-        document.getElementById('stdSearch').oninput = (e) => this.filterStandards(e.target.value);
-        document.getElementById('stockSearchInput').oninput = (e) => this.renderStockList(e.target.value);
+        const stdSearch = document.getElementById('stdSearch');
+        if(stdSearch) stdSearch.oninput = (e) => this.filterStandards(e.target.value);
+        
+        const stockSearch = document.getElementById('stockSearchInput');
+        if(stockSearch) stockSearch.oninput = (e) => this.renderStockList(e.target.value);
 
         // Wake Lock
         document.getElementById('wakeLockBtn').onclick = () => this.toggleWakeLock();
@@ -79,6 +81,141 @@ export const UI = {
                 this.toast(`Bienvenido, ${name}`);
             }
         };
+
+        // === ACCIONES DE GUARDADO (CRUD) ===
+        
+        // Guardar Tarea
+        document.getElementById('saveTaskBtn').onclick = () => this.saveTask();
+        // Eliminar Tarea (desde el modal)
+        document.getElementById('deleteTaskBtn').onclick = () => {
+             const id = document.getElementById('taskId').value;
+             if(id) window.delTask(id);
+        };
+
+        // Guardar Pedido
+        document.getElementById('saveOrderBtn').onclick = () => this.saveOrder();
+
+        // Guardar Reparto
+        document.getElementById('saveDelBtn').onclick = () => this.saveDelivery();
+
+        // Otros botones de guardado (Notas, Scripts, etc) pueden agregarse aquí siguiendo el mismo patrón
+        // Por ahora nos enfocamos en los solicitados.
+    },
+
+    // --- LOGICA DE GUARDADO ---
+
+    async saveTask() {
+        const id = document.getElementById('taskId').value;
+        const text = document.getElementById('taskInput').value.trim();
+        const assignee = document.getElementById('taskAssignee').value.trim();
+        const priority = document.getElementById('taskPriority').value;
+        const cycle = document.getElementById('taskCycle').value;
+
+        if (!text) return this.toast("Escribe una descripción", "error");
+
+        const data = {
+            text,
+            assignee: assignee || 'Equipo',
+            priority,
+            cycle,
+            branch: State.branch,
+            // Si es nueva, status pending. Si es edit, mantenemos el status que tenía o reseteamos según lógica. 
+            // Para simplificar, updates no cambian status a menos que se especifique.
+            // Aquí asumimos que editar propiedades no completa la tarea.
+        };
+
+        // Si es creación nueva
+        if (!id) {
+            data.status = 'pending';
+            data.createdBy = State.username;
+        }
+
+        try {
+            if (id) {
+                await DataService.update('tasks', id, data);
+                this.toast("Tarea actualizada");
+            } else {
+                await DataService.add('tasks', data);
+                this.toast("Tarea creada");
+            }
+            this.closeModal();
+        } catch (e) {
+            console.error(e);
+            this.toast("Error al guardar", "error");
+        }
+    },
+
+    async saveOrder() {
+        const requester = document.getElementById('orderRequester').value.trim();
+        const notes = document.getElementById('orderNotes').value.trim();
+        
+        // Recopilar items
+        const items = [];
+        const container = document.getElementById('orderItemsContainer');
+        container.querySelectorAll('.order-row').forEach(row => {
+            const name = row.querySelector('.order-item').value.trim();
+            const amount = row.querySelector('.order-amount').value.trim();
+            if(name) items.push({ name, amount });
+        });
+
+        if (items.length === 0) return this.toast("Agrega al menos un producto", "error");
+        if (!requester) return this.toast("Indica quién solicita", "error");
+
+        const data = {
+            requester,
+            notes,
+            items,
+            status: 'pending',
+            branch: State.branch, // Ojo: Los pedidos suelen ser globales, pero marcamos origen
+            createdAt: new Date() // El serverTimestamp se pone en DataService, esto es por si acaso
+        };
+
+        try {
+            await DataService.add('orders', data);
+            this.toast("Pedido enviado");
+            this.closeModal();
+        } catch (e) {
+            this.toast("Error al enviar pedido", "error");
+        }
+    },
+
+    async saveDelivery() {
+        const id = document.getElementById('delId').value;
+        const client = document.getElementById('delClient').value.trim();
+        const phone = document.getElementById('delPhone').value.trim();
+        const when = document.getElementById('delWhen').value.trim();
+        const where = document.getElementById('delWhere').value.trim();
+        const notes = document.getElementById('delNotes').value.trim();
+
+        // Recopilar items (Reutiliza lógica similar a orders)
+        const items = [];
+        const container = document.getElementById('delItemsContainer');
+        container.querySelectorAll('.order-row').forEach(row => {
+            const name = row.querySelector('.order-item').value.trim();
+            const amount = row.querySelector('.order-amount').value.trim();
+            if(name) items.push({ name, amount });
+        });
+
+        if (!client || !where) return this.toast("Faltan datos del cliente o dirección", "error");
+
+        const data = {
+            client, phone, when, where, notes, items,
+            branch: State.branch,
+            status: 'pending' // pending, delivered, cancelled
+        };
+
+        try {
+            if (id) {
+                await DataService.update('deliveries', id, data);
+                this.toast("Reparto actualizado");
+            } else {
+                await DataService.add('deliveries', data);
+                this.toast("Reparto agendado");
+            }
+            this.closeModal();
+        } catch (e) {
+            this.toast("Error al guardar reparto", "error");
+        }
     },
 
     // --- NAVEGACIÓN Y APARIENCIA ---
@@ -108,7 +245,6 @@ export const UI = {
         const overlay = document.getElementById('sidebarOverlay');
         if (show) {
             overlay.classList.remove('hidden');
-            // Hack para forzar reflow y que la transición funcione
             void overlay.offsetWidth; 
             overlay.classList.remove('opacity-0');
             sidebar.classList.remove('-translate-x-full');
@@ -146,7 +282,6 @@ export const UI = {
         // Actualizar menú activo
         document.querySelectorAll('.nav-item').forEach(el => {
             el.classList.remove('active-nav', 'bg-slate-50', 'border-slate-500');
-            // Check simple si el onclick contiene el nombre de la vista
             if (el.getAttribute('onclick') && el.getAttribute('onclick').includes(view)) {
                 el.classList.add('bg-slate-50', 'border-slate-500');
                 const icon = el.querySelector('i');
@@ -169,7 +304,6 @@ export const UI = {
         };
         document.getElementById('pageTitle').innerText = titles[view] || 'Jardín OS';
         
-        if(view === 'chat') this.scrollToBottom('chatList');
         if(view === 'stock' && State.stockList.length === 0) this.loadStock(); 
     },
 
@@ -181,9 +315,7 @@ export const UI = {
         
         // Tareas
         State.listeners.tasks = DataService.subscribeToCollection('tasks', (items) => {
-            // Filtrar por sucursal en cliente
             const filtered = items.filter(i => i.branch === State.branch);
-            // Ordenar por prioridad
             const pVal = {critical:0, high:1, medium:2, low:3};
             filtered.sort((a,b) => { 
                 if(pVal[a.priority] !== pVal[b.priority]) return pVal[a.priority] - pVal[b.priority]; 
@@ -192,13 +324,7 @@ export const UI = {
             this.renderTasks(filtered);
         });
 
-        // Chat
-        State.listeners.chat = DataService.subscribeToCollection('chat', (items) => {
-            const filtered = items.filter(i => i.branch === State.branch);
-            // Ordenar cronológicamente ascendente (antiguos arriba)
-            filtered.sort((a,b) => (a.createdAt?.seconds||0)-(b.createdAt?.seconds||0));
-            this.renderChat(filtered);
-        });
+        // NOTA: Se eliminó el listener del Chat para optimizar y poner en mantenimiento.
         
         // Notas
         State.listeners.notes = DataService.subscribeToCollection('notes', (items) => {
@@ -230,7 +356,7 @@ export const UI = {
         }
     },
 
-    // --- RENDERERS (CON SEGURIDAD MEJORADA) ---
+    // --- RENDERERS ---
 
     renderTasks(tasks) {
         const list = document.getElementById('taskList');
@@ -242,7 +368,6 @@ export const UI = {
         const today = new Date().toDateString();
 
         tasks.forEach(t => {
-            // Lógica Cíclica
             let isDone = false;
             if (t.cycle && t.cycle !== 'none') {
                 if (t.lastDone) {
@@ -257,8 +382,6 @@ export const UI = {
             const div = document.createElement('div');
             div.className = `bg-white rounded-xl p-4 shadow-sm border-l-4 ${prioColor[t.priority] || 'border-l-slate-300'} flex gap-3 transition-all ${isDone ? 'opacity-50' : ''}`;
             
-            // Construcción segura del HTML
-            // Botones de acción
             const actionsDiv = document.createElement('div');
             actionsDiv.className = "flex flex-col gap-2 pt-1 border-l border-slate-100 pl-3";
             
@@ -271,7 +394,6 @@ export const UI = {
                 actionsDiv.innerHTML = `<button onclick="window.updateTaskStatus('${t.id}', 'pending', '${t.cycle}')" class="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-md active:scale-90"><i class="fas fa-undo"></i></button>`;
             }
 
-            // Contenido
             const contentDiv = document.createElement('div');
             contentDiv.className = "flex-grow";
             
@@ -285,18 +407,16 @@ export const UI = {
 
             const title = document.createElement('h3');
             title.className = `text-slate-800 font-medium leading-tight ${isDone ? 'line-through text-slate-400' : ''}`;
-            title.textContent = t.text; // TEXTO SEGURO
+            title.textContent = t.text; 
 
             const footer = document.createElement('div');
             footer.className = "flex items-center justify-between mt-2";
             footer.innerHTML = `<span class="text-xs text-slate-400 flex items-center gap-1"><i class="fas fa-user-circle"></i> ${t.assignee || 'Sin asignar'}</span>`;
             
-            // Botón editar (requiere pasar objeto JSON, cuidado con las comillas)
-            // Simplificación: Guardamos el objeto en memoria temporal o dataset, pero por compatibilidad usamos el viejo truco con escape
             const editBtn = document.createElement('button');
             editBtn.className = "text-slate-300 hover:text-slate-500 px-2";
             editBtn.innerHTML = '<i class="fas fa-ellipsis-h"></i>';
-            editBtn.onclick = () => window.editTask(t); // Usamos función wrapper
+            editBtn.onclick = () => window.editTask(t);
             footer.appendChild(editBtn);
 
             contentDiv.appendChild(metaDiv);
@@ -307,46 +427,6 @@ export const UI = {
             div.appendChild(actionsDiv);
             list.appendChild(div);
         });
-    },
-
-    renderChat(msgs) {
-        const list = document.getElementById('chatList');
-        list.innerHTML = '';
-        msgs.forEach(m => {
-            const isMe = m.sender === State.user.uid;
-            const div = document.createElement('div');
-            div.className = `msg-bubble ${isMe ? 'msg-me' : 'msg-other'}`;
-            
-            // Autor
-            if (!isMe && m.author) {
-                const authorDiv = document.createElement('div');
-                authorDiv.className = "text-[10px] font-bold opacity-60 mb-1 text-emerald-600";
-                authorDiv.textContent = m.author;
-                div.appendChild(authorDiv);
-            }
-
-            // Contenido
-            if(m.type === 'text') {
-                const p = document.createElement('p');
-                p.textContent = m.text; // SEGURIDAD XSS
-                div.appendChild(p);
-            } else if (m.type === 'image') {
-                const img = document.createElement('img');
-                img.src = m.url;
-                img.className = "rounded-lg max-h-48 w-full object-cover cursor-pointer";
-                img.onclick = () => window.open(m.url);
-                div.appendChild(img);
-            }
-
-            // Hora
-            const timeDiv = document.createElement('div');
-            timeDiv.className = "text-[10px] text-right mt-1 opacity-50";
-            timeDiv.textContent = m.createdAt ? new Date(m.createdAt.seconds*1000).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '...';
-            div.appendChild(timeDiv);
-
-            list.appendChild(div);
-        });
-        this.scrollToBottom('chatList');
     },
 
     renderNotes(notes) {
@@ -366,7 +446,7 @@ export const UI = {
 
             const p = document.createElement('p');
             p.className = "whitespace-pre-wrap text-slate-800 leading-relaxed font-sans";
-            p.textContent = n.content; // SEGURIDAD XSS
+            p.textContent = n.content; 
             div.appendChild(p);
 
             const btn = document.createElement('button');
@@ -384,7 +464,6 @@ export const UI = {
         container.innerHTML = '';
         
         const term = query.toLowerCase();
-        // Filtrado optimizado en memoria
         const filtered = State.stockList.filter(item => item.toLowerCase().includes(term));
         
         if (filtered.length === 0) {
@@ -392,7 +471,6 @@ export const UI = {
             return;
         }
 
-        // Render virtual (solo primeros 50 para velocidad)
         filtered.slice(0, 50).forEach(item => { 
             const div = document.createElement('div');
             div.className = "p-3 text-sm text-slate-700 hover:bg-slate-50 border-b border-slate-50 last:border-0";
@@ -405,7 +483,6 @@ export const UI = {
         const datalist = document.getElementById('stockItemsList');
         if(!datalist) return;
         datalist.innerHTML = '';
-        // Límite razonable para datalist
         State.stockList.slice(0, 2000).forEach(item => {
             const option = document.createElement('option');
             option.value = item;
@@ -413,66 +490,122 @@ export const UI = {
         });
     },
 
-    // --- OTROS RENDERERS (Simplificados por brevedad, asumiendo HTML seguro interno) ---
     renderOrders(orders) {
-        // Implementación idéntica a la original pero usando innerHTML seguro donde sea posible
-        // Por brevedad, mantendré la estructura original ya que los pedidos suelen tener estructura fija
         const list = document.getElementById('ordersList');
         list.innerHTML = '';
         const pending = orders.filter(o => o.status !== 'received').length;
         document.getElementById('badgeOrders')?.classList.toggle('hidden', pending === 0);
-        if(orders.length === 0) { list.innerHTML = this.emptyState('shopping-basket', 'Sin pedidos'); return; }
         
-        // ... (Logica de renderizado de orders similar, se puede copiar del original si es necesario detallar)
-        // Nota: Para no hacer este archivo kilométrico, asumimos que copias la logica de renderOrders, renderDeliveries, etc.
-        // Si quieres que las escriba completas (ocupan mucho espacio), avísame. 
-        // He incluido una versión genérica abajo para que funcione al menos visualmente.
+        if(orders.length === 0) { list.innerHTML = this.emptyState('shopping-basket', 'Sin pedidos'); return; }
         
         orders.forEach(o => {
            const div = document.createElement('div');
-           div.className = "bg-white rounded-xl p-4 shadow-sm border border-slate-200 mb-2";
-           div.innerHTML = `<div class="font-bold">${o.requester}</div><div>${o.items.length} items</div>`; 
-           // ... Botones de acción ...
-           const btn = document.createElement('button');
-           btn.className = "text-red-500 text-xs mt-2";
-           btn.innerText = "Eliminar";
-           btn.onclick = () => window.delShared('orders', o.id);
-           div.appendChild(btn);
+           div.className = "bg-white rounded-xl p-4 shadow-sm border border-slate-200 mb-2 relative overflow-hidden";
+           
+           // Listar items
+           let itemsHtml = '<ul class="text-sm text-slate-600 mt-2 space-y-1">';
+           o.items.forEach(i => itemsHtml += `<li><b>${i.amount}</b> ${i.name}</li>`);
+           itemsHtml += '</ul>';
+
+           div.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <div>
+                        <div class="font-bold text-slate-800">${o.requester} <span class="text-xs font-normal text-slate-400">solicita:</span></div>
+                        ${o.notes ? `<div class="text-xs text-slate-400 italic my-1">"${o.notes}"</div>` : ''}
+                    </div>
+                    <button onclick="window.delShared('orders', '${o.id}')" class="text-slate-300 hover:text-red-400"><i class="fas fa-trash-alt"></i></button>
+                </div>
+                ${itemsHtml}
+                <div class="text-[10px] text-right text-slate-300 mt-2">${o.createdAt ? new Date(o.createdAt.seconds*1000).toLocaleDateString() : ''}</div>
+           `; 
            list.appendChild(div);
         });
     },
     
     renderDeliveries(items) { 
-        // Placeholder funcional para no extender demasiado el código
         const list = document.getElementById('deliveryList');
         list.innerHTML = '';
+        const pending = items.filter(i => i.status === 'pending').length;
+        document.getElementById('badgeDelivery')?.classList.toggle('hidden', pending === 0);
+
+        if(items.length === 0) { list.innerHTML = this.emptyState('truck', 'Sin repartos pendientes'); return; }
+
         items.forEach(d => {
             const div = document.createElement('div');
-            div.className = "bg-white rounded-xl p-4 shadow-sm border border-slate-200 mb-2";
-            div.innerHTML = `<div class="font-bold">${d.client}</div><div>${d.where}</div>`;
-             const btn = document.createElement('button');
-             btn.innerText = "Editar";
-             btn.onclick = () => window.editDelivery(d);
-             div.appendChild(btn);
-             list.appendChild(div);
+            div.className = "bg-white rounded-xl p-4 shadow-sm border border-slate-200 mb-3 relative";
+            
+            // Items Preview
+            const itemsText = d.items ? d.items.map(i => `${i.amount} ${i.name}`).join(', ') : 'Sin detalle';
+
+            div.innerHTML = `
+                <div class="flex items-start justify-between mb-2">
+                    <div>
+                         <h3 class="font-bold text-slate-800 text-lg">${d.client}</h3>
+                         <div class="text-sm text-emerald-600 font-bold"><i class="fas fa-map-marker-alt"></i> ${d.where}</div>
+                    </div>
+                    <button onclick="window.editDelivery(null)" class="hidden text-slate-400"><i class="fas fa-pen"></i></button> 
+                    <button onclick="window.delShared('deliveries', '${d.id}')" class="text-slate-300 hover:text-red-400"><i class="fas fa-trash-alt"></i></button>
+                </div>
+                
+                <div class="bg-slate-50 p-2 rounded-lg text-sm text-slate-600 mb-2 border border-slate-100">
+                    ${itemsText}
+                </div>
+
+                <div class="flex items-center justify-between text-xs text-slate-500">
+                    <div class="flex gap-3">
+                        ${d.when ? `<span><i class="far fa-clock"></i> ${d.when}</span>` : ''}
+                        ${d.phone ? `<a href="tel:${d.phone}" class="text-blue-500 hover:underline"><i class="fas fa-phone"></i> ${d.phone}</a>` : ''}
+                    </div>
+                </div>
+                ${d.notes ? `<div class="mt-2 text-xs text-amber-600 bg-amber-50 p-1 px-2 rounded inline-block"><i class="fas fa-sticky-note"></i> ${d.notes}</div>` : ''}
+            `;
+            
+            // Hack para pasar el objeto al onclick sin problemas de comillas
+            const editBtn = div.querySelector('button.hidden');
+            if(editBtn) {
+                 editBtn.classList.remove('hidden');
+                 editBtn.onclick = () => window.editDelivery(d);
+            }
+
+            list.appendChild(div);
         });
     },
     
     renderStandards(items) {
-        // Copiar lógica original de renderStandards
-        // ...
         const list = document.getElementById('standardsList');
         list.innerHTML = items.length ? '' : this.emptyState('ruler-combined', 'Catálogo vacío');
-        // (Simplificado)
+        items.forEach(s => {
+             const div = document.createElement('div');
+             div.className = "bg-white p-4 rounded-xl shadow-sm flex gap-4 items-center";
+             div.innerHTML = `
+                <div class="w-16 h-16 bg-slate-100 rounded-lg flex-none bg-cover bg-center" style="background-image: url('${s.photo || ''}');">
+                    ${!s.photo ? '<i class="fas fa-image text-slate-300 flex items-center justify-center h-full w-full"></i>' : ''}
+                </div>
+                <div class="flex-grow">
+                    <h3 class="font-bold text-slate-800">${s.species}</h3>
+                    <div class="text-xs text-slate-500 flex gap-2 mt-1">
+                        <span class="bg-slate-100 px-2 py-0.5 rounded font-bold">${s.size}</span>
+                        <span>${s.height || '-'}</span>
+                    </div>
+                </div>
+             `;
+             list.appendChild(div);
+        });
     },
     
     renderProcedures(items) {
          const list = document.getElementById('proceduresList');
          list.innerHTML = '';
          items.forEach(p => {
+             const color = p.color || 'blue';
+             const colors = { blue: 'bg-blue-50 border-blue-200 text-blue-800', green: 'bg-emerald-50 border-emerald-200 text-emerald-800', red: 'bg-red-50 border-red-200 text-red-800', purple: 'bg-purple-50 border-purple-200 text-purple-800', pink: 'bg-pink-50 border-pink-200 text-pink-800', teal: 'bg-teal-50 border-teal-200 text-teal-800', slate: 'bg-slate-50 border-slate-200 text-slate-800' };
+             
              const div = document.createElement('div');
-             div.className = "p-4 bg-white rounded shadow mb-2";
-             div.textContent = p.title;
+             div.className = `p-4 rounded-xl border ${colors[color] || colors.blue} mb-3 shadow-sm`;
+             div.innerHTML = `
+                <h3 class="font-bold mb-2 text-lg">${p.title}</h3>
+                <div class="whitespace-pre-wrap text-sm opacity-90">${p.steps}</div>
+             `;
              list.appendChild(div);
          });
     },
@@ -482,12 +615,14 @@ export const UI = {
          list.innerHTML = '';
          items.forEach(s => {
              const div = document.createElement('div');
-             div.className = "p-4 bg-white rounded shadow mb-2";
-             const h3 = document.createElement('h3'); h3.className="font-bold"; h3.textContent = s.title;
-             const p = document.createElement('p'); p.className="text-sm mt-2 font-mono bg-slate-50 p-2"; p.textContent = s.content;
-             const btn = document.createElement('button'); btn.innerText = "Copiar"; btn.className="mt-2 text-purple-600 text-sm font-bold";
-             btn.onclick = () => window.copyScript(s.content);
-             div.appendChild(h3); div.appendChild(p); div.appendChild(btn);
+             div.className = "p-4 bg-white rounded-xl shadow-sm border border-slate-100 mb-3";
+             div.innerHTML = `
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="font-bold text-slate-700">${s.title}</h3>
+                    <button onclick="window.copyScript(this.getAttribute('data-content'))" data-content="${s.content}" class="text-purple-600 text-xs font-bold bg-purple-50 px-2 py-1 rounded hover:bg-purple-100">COPIAR</button>
+                </div>
+                <div class="text-sm text-slate-500 font-mono bg-slate-50 p-3 rounded-lg border border-slate-100 leading-relaxed">${s.content}</div>
+             `;
              list.appendChild(div);
          });
     },
@@ -504,8 +639,6 @@ export const UI = {
             if(window.innerWidth >= 640) modal.classList.remove('sm:translate-y-full');
         });
 
-        // Lógica específica de cada modal (Tareas, Pedidos, etc)
-        // Se mantiene similar al original
         if (id === 'modal-tasks') {
             if (data) {
                 document.getElementById('taskId').value = data.id;
@@ -514,12 +647,49 @@ export const UI = {
                 document.getElementById('taskPriority').value = data.priority || 'medium';
                 document.getElementById('taskCycle').value = data.cycle || 'none';
                 document.getElementById('deleteTaskBtn').classList.remove('hidden');
+                document.getElementById('taskModalTitle').innerText = "Editar Tarea";
             } else {
                 document.getElementById('taskId').value = '';
                 document.getElementById('taskInput').value = '';
                 document.getElementById('taskAssignee').value = State.username || '';
+                document.getElementById('taskPriority').value = 'medium';
+                document.getElementById('taskCycle').value = 'none';
                 document.getElementById('deleteTaskBtn').classList.add('hidden');
+                document.getElementById('taskModalTitle').innerText = "Nueva Tarea";
             }
+        }
+        
+        if (id === 'modal-delivery') {
+            const container = document.getElementById('delItemsContainer');
+            container.innerHTML = '';
+            
+            if (data) {
+                document.getElementById('delModalTitle').innerText = "Editar Reparto";
+                document.getElementById('delId').value = data.id;
+                document.getElementById('delClient').value = data.client || '';
+                document.getElementById('delPhone').value = data.phone || '';
+                document.getElementById('delWhen').value = data.when || '';
+                document.getElementById('delWhere').value = data.where || '';
+                document.getElementById('delNotes').value = data.notes || '';
+                if(data.items) data.items.forEach(i => window.addOrderRow('delItemsContainer', i.name, i.amount));
+            } else {
+                document.getElementById('delModalTitle').innerText = "Nuevo Reparto";
+                document.getElementById('delId').value = '';
+                document.getElementById('delClient').value = '';
+                document.getElementById('delPhone').value = '';
+                document.getElementById('delWhen').value = '';
+                document.getElementById('delWhere').value = '';
+                document.getElementById('delNotes').value = '';
+                window.addOrderRow('delItemsContainer');
+            }
+        }
+        
+        if (id === 'modal-orders') {
+            const container = document.getElementById('orderItemsContainer');
+            container.innerHTML = '';
+            window.addOrderRow('orderItemsContainer');
+            document.getElementById('orderRequester').value = State.username || '';
+            document.getElementById('orderNotes').value = '';
         }
     },
 
@@ -567,39 +737,40 @@ export const UI = {
     }
 };
 
-// === EXPOSICIÓN GLOBAL (COMPATIBILIDAD HTML) ===
-// Estas funciones se adjuntan a 'window' para que los onclick="..." del HTML sigan funcionando.
+// === EXPOSICIÓN GLOBAL ===
 
 window.UI = UI;
 
 window.updateTaskStatus = async (id, status, cycle) => {
-    // Si cycle existe, podríamos calcular lastDone aquí, pero DataService lo manejará mejor
-    await DataService.update('tasks', id, { status, ...(status==='done' && cycle!=='none' ? {lastDone: new Date()} : {}) }); // Simplificado Date
+    // Si es cíclica y se marca done, actualizar lastDone
+    const updateData = { status };
+    if (status === 'done' && cycle && cycle !== 'none') {
+        updateData.lastDone = new Date(); // serverTimestamp mejor, pero Date local funciona para UI inmediata
+    }
+    await DataService.update('tasks', id, updateData);
 };
 
 window.editTask = (task) => UI.openModal('modal-tasks', task);
 window.editDelivery = (d) => UI.openModal('modal-delivery', d);
 
 window.delTask = async (id) => { 
-    if(confirm('¿Eliminar?')) { 
+    if(confirm('¿Eliminar esta tarea?')) { 
         UI.closeModal(); 
         await DataService.delete('tasks', id); 
         UI.toast("Tarea eliminada"); 
     } 
 };
 
-window.delItem = async (col, id) => { if(confirm('¿Eliminar?')) await DataService.delete(col, id); };
-window.delShared = async (col, id) => { if(confirm('¿Eliminar Global?')) await DataService.delete(col, id); };
+window.delItem = async (col, id) => { if(confirm('¿Eliminar nota?')) await DataService.delete(col, id); };
+window.delShared = async (col, id) => { if(confirm('¿Eliminar elemento compartido?')) await DataService.delete(col, id); };
 
 window.copyScript = (text) => {
-    navigator.clipboard.writeText(text).then(() => UI.toast("Copiado", "success"));
+    navigator.clipboard.writeText(text).then(() => UI.toast("Copiado al portapapeles", "success"));
 };
 
-// ... Agregar el resto de funciones globales (saveTaskBtn onclick handlers se mueven al init del UI o se mantienen en HTML si son window functions)
-// Nota: En la próxima fase (1.5) moveremos los onclicks de los botones "Guardar" dentro de setupEventListeners para limpiar el HTML.
-
 window.handleStockImport = async (input) => {
-    // Logica CSV simplificada invocando al DataService
-    // ... (Se debe copiar el parser CSV aquí o moverlo a una utilidad)
-    // Por brevedad, asumo que usarás el parser que ya tenías, pero llamando a DataService.batchInsertStock(items)
+    // Lógica simplificada de importación
+    if(!input.files || !input.files[0]) return;
+    UI.toast("Procesando archivo...");
+    // ... Implementación real requeriría parser CSV
 };
