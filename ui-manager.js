@@ -47,8 +47,9 @@ export const UI = {
     },
 
     setupEventListeners() {
-        // Modal Settings (reemplaza sidebar)
-        document.getElementById('branchToggleBtn').onclick = () => this.toggleBranch();
+        // Toggle Sucursal (Ahora en el Header)
+        const branchBtn = document.getElementById('branchToggleBtn');
+        if (branchBtn) branchBtn.onclick = () => this.toggleBranch();
         
         // Modales
         document.querySelectorAll('.modal-close').forEach(b => b.onclick = () => this.closeModal());
@@ -200,14 +201,14 @@ export const UI = {
         
         if (branch === 'centro') {
             body.className = 'branch-centro transition-colors duration-500 font-sans text-slate-800';
-            label.innerText = 'Centro Tao';
+            if(label) label.innerText = 'Centro Tao';
         } else {
             body.className = 'branch-ejemplares transition-colors duration-500 font-sans text-slate-800';
-            label.innerText = 'Ejemplares Tao';
+            if(label) label.innerText = 'Ejemplares Tao';
         }
         
         if(State.user) this.startDataListeners();
-        this.toast(`Cambiado a ${label.innerText}`);
+        if(label) this.toast(`Cambiado a ${label.innerText}`);
     },
 
     toggleBranch() { this.setBranch(State.branch === 'centro' ? 'ejemplares' : 'centro'); },
@@ -246,7 +247,7 @@ export const UI = {
         
         const titles = { 
             tasks: 'Mis Tareas', orders: 'Pedidos', delivery: 'Repartos', 
-            notes: 'Notas', procedures: 'Procesos'
+            notes: 'Notas', procedures: 'Procedimientos'
         };
         document.getElementById('pageTitle').innerText = titles[view] || 'Jardín OS';
     },
@@ -270,7 +271,7 @@ export const UI = {
             speechBtn.classList.replace('text-slate-500','text-slate-600');
             speechBtn.classList.add('bg-white','shadow-sm');
             protocolsBtn.classList.remove('bg-white','shadow-sm');
-            protocolsBtn.classList.replace('text-slate-600','text-slate-500');
+            protocolsBtn.classList.replace('text-slate-500','text-slate-500');
             
             speechDiv.classList.remove('hidden');
             protocolsDiv.classList.add('hidden');
