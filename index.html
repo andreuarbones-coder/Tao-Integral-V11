@@ -40,8 +40,15 @@
             </div>
             
             <div class="flex items-center gap-3">
+                 <!-- Botón Cambio de Sucursal (Movido al Header) -->
+                 <button id="branchToggleBtn" class="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full transition-colors border border-white/10 active:scale-95">
+                    <span id="settingsBranchName" class="text-[10px] font-bold uppercase tracking-wider">Centro Tao</span>
+                    <i class="fas fa-exchange-alt text-xs opacity-70"></i>
+                 </button>
+
                  <div id="loadingIndicator" class="hidden spinner"></div>
-                 <!-- Botón Ajustes (Reemplaza al sidebar) -->
+                 
+                 <!-- Botón Ajustes -->
                  <button onclick="UI.openModal('modal-settings')" class="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 active:scale-95 transition">
                     <i class="fas fa-cog text-sm"></i>
                  </button>
@@ -104,16 +111,16 @@
 
         <!-- BOTTOM NAVIGATION BAR -->
         <nav class="bottom-nav fixed bottom-0 left-0 w-full flex justify-around items-center z-30 px-2">
-            <!-- 1. Tareas -->
+            <!-- 1. Procedimientos (Movido al inicio) -->
+            <button onclick="UI.nav('procedures')" id="nav-procedures" class="nav-btn w-1/5 flex flex-col items-center justify-center h-full pt-2">
+                <i class="fas fa-book text-xl mb-1"></i>
+                <span class="text-[10px] font-medium">Procedimientos</span>
+            </button>
+            
+            <!-- 2. Tareas (Movido a la segunda posición) -->
             <button onclick="UI.nav('tasks')" id="nav-tasks" class="nav-btn w-1/5 flex flex-col items-center justify-center h-full pt-2">
                 <i class="fas fa-tasks text-xl mb-1"></i>
                 <span class="text-[10px] font-medium">Tareas</span>
-            </button>
-            
-            <!-- 2. Procedimientos -->
-            <button onclick="UI.nav('procedures')" id="nav-procedures" class="nav-btn w-1/5 flex flex-col items-center justify-center h-full pt-2">
-                <i class="fas fa-book text-xl mb-1"></i>
-                <span class="text-[10px] font-medium">Procesos</span>
             </button>
 
             <!-- 3. Repartos (Central) -->
@@ -148,20 +155,16 @@
     <!-- === MODALS === -->
     <div id="modalOverlay" class="hidden fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center sm:p-4 backdrop-blur-sm">
         
-        <!-- MODAL: SETTINGS (Nuevo reemplazo de Sidebar) -->
+        <!-- MODAL: SETTINGS (Reemplazo de Sidebar) -->
         <div id="modal-settings" class="bg-white w-full sm:max-w-xs sm:rounded-2xl rounded-t-2xl shadow-2xl overflow-hidden hidden transform transition-transform duration-300 translate-y-full sm:translate-y-0 pb-6">
             <div class="p-5 border-b border-slate-100 flex justify-between items-center">
                 <h2 class="font-bold text-slate-800">Ajustes</h2>
                 <button class="modal-close text-slate-400"><i class="fas fa-times"></i></button>
             </div>
             <div class="p-5 space-y-3">
-                <div class="text-xs font-bold text-slate-400 uppercase">Sucursal</div>
-                <button id="branchToggleBtn" class="flex items-center justify-between w-full bg-slate-50 p-3 rounded-xl border border-slate-200">
-                    <span id="settingsBranchName" class="font-bold text-slate-700">Centro Tao</span>
-                    <i class="fas fa-exchange-alt text-slate-400"></i>
-                </button>
+                <!-- (Sección de Sucursal eliminada porque ahora está en el Header) -->
 
-                <div class="text-xs font-bold text-slate-400 uppercase mt-4">Sistema</div>
+                <div class="text-xs font-bold text-slate-400 uppercase">Sistema</div>
                 <button onclick="window.downloadBackup()" class="w-full py-3 px-4 rounded-xl bg-blue-50 text-blue-600 font-bold flex items-center gap-3 text-sm">
                     <i class="fas fa-cloud-download-alt"></i> <span>Descargar Backup JSON</span>
                 </button>
@@ -170,7 +173,7 @@
                 </button>
                 
                 <div class="text-center mt-4 pt-4 border-t border-slate-50">
-                    <p class="text-[10px] text-slate-400">Jardín OS v11.0 &bull; <span id="connectionStatus">Conectado</span></p>
+                    <p class="text-[10px] text-slate-400">Jardín OS v11.1 &bull; <span id="connectionStatus">Conectado</span></p>
                 </div>
             </div>
         </div>
