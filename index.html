@@ -398,10 +398,13 @@
     <script type="module">
         import { UI } from './ui-manager.js';
         
-        // Inicializar
-        document.addEventListener('DOMContentLoaded', () => {
+        // CORRECCIÓN: Evitar race-condition con DOMContentLoaded
+        // Si el DOM ya está listo (porque el módulo se cargó diferido), iniciar directamente.
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => UI.init());
+        } else {
             UI.init();
-        });
+        }
 
         // Helper global para agregar filas dinámicas (se mantiene simple aquí para no sobrecargar módulos)
         window.addOrderRow = (containerId = 'orderItemsContainer', val='', amount='') => {
