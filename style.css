@@ -2,6 +2,7 @@
 :root {
     --app-height: 100dvh;
     --header-height: 64px;
+    --nav-height: 70px; /* Altura de la barra inferior */
 }
 
 body {
@@ -36,46 +37,75 @@ body.branch-ejemplares {
     scrollbar-width: none;
 }
 
-/* Área de scroll principal (resta el header) */
+/* Área de scroll principal */
 .scroll-area {
     height: calc(var(--app-height) - var(--header-height));
     overflow-y: auto;
-    padding-bottom: 80px; /* Espacio para el FAB y navegación inferior si la hubiera */
+    padding-bottom: calc(var(--nav-height) + 40px); /* Espacio extra para que no tape el contenido */
 }
 
-/* === Chat Bubbles === */
-.msg-bubble {
-    max-width: 85%;
-    border-radius: 16px;
-    padding: 12px;
-    margin-bottom: 8px;
+/* === Bottom Navigation Bar === */
+.bottom-nav {
+    height: var(--nav-height);
+    background: white;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+.nav-btn {
     position: relative;
-    word-wrap: break-word;
+    color: #94a3b8; /* Slate 400 */
+    transition: all 0.3s ease;
 }
 
-.msg-me {
-    background-color: var(--secondary);
-    margin-left: auto;
+.nav-btn.active {
     color: var(--primary);
-    border-bottom-right-radius: 4px;
-    border: 1px solid rgba(0,0,0,0.05);
 }
 
-.msg-other {
-    background-color: white;
-    margin-right: auto;
-    color: #334155; /* Slate 700 */
-    border-bottom-left-radius: 4px;
-    border: 1px solid #e2e8f0;
+.nav-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    background-color: var(--primary);
+    border-radius: 50%;
+}
+
+/* Botón Central Destacado (Repartos) */
+.nav-btn-center {
+    top: -20px;
+    background-color: var(--primary);
+    color: white;
+    border-radius: 50%;
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    border: 4px solid #f1f5f9; /* Color de fondo del body para efecto recorte */
+}
+
+.nav-btn-center.active {
+    background-color: var(--accent);
+    color: white;
+    transform: translateY(-5px);
+}
+
+.nav-btn-center.active::after {
+    display: none; /* No mostrar el punto en el central */
 }
 
 /* === Loader / Spinner === */
 .spinner {
-    border: 3px solid rgba(0,0,0,0.1);
-    border-left-color: var(--accent);
+    border: 3px solid rgba(255,255,255,0.3);
+    border-left-color: white;
     border-radius: 50%;
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     animation: spin 1s linear infinite;
 }
 
@@ -87,7 +117,7 @@ body.branch-ejemplares {
 /* === Toast Notifications === */
 #toast-container {
     position: fixed;
-    top: 90px;
+    top: 80px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 9999;
@@ -95,14 +125,14 @@ body.branch-ejemplares {
     width: auto;
     max-width: 90%;
     display: flex;
-    flex-direction: column-reverse; /* flex-col-reverse en tailwind */
+    flex-direction: column-reverse;
     align-items: center;
 }
 
 .toast {
     pointer-events: auto;
     animation: fade-in-down 0.3s ease-out;
-    background: rgba(15, 23, 42, 0.95); /* Slate 900 con transparencia */
+    background: rgba(15, 23, 42, 0.95);
     backdrop-filter: blur(4px);
     color: white;
     padding: 10px 20px;
@@ -118,12 +148,6 @@ body.branch-ejemplares {
 }
 
 @keyframes fade-in-down {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
