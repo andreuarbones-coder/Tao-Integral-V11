@@ -13,8 +13,9 @@ window.tailwind.config = {
                     // Colores personalizados del Vivero
                     centro: '#064e3b',       // Verde Oscuro
                     centroLight: '#34d399',  // Verde Claro
-                    ejemplares: '#312e81',   // Indigo Oscuro
-                    ejemplaresLight: '#818cf8', // Indigo Claro
+                    // CAMBIO 1 y 4: Nuevos colores para Ejemplares (Naranja Tranquilo)
+                    ejemplares: '#c2410c',   // Orange 700 (Ladrillo/Naranja oscurecido)
+                    ejemplaresLight: '#fb923c', // Orange 400
                     warning: '#f59e0b',
                     danger: '#ef4444'
                 }
