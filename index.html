@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Jardín OS v10 (Modular)</title>
+    <title>Jardín OS v11 (Modular)</title>
     
     <!-- === MANIFIESTO PWA === -->
     <link rel="manifest" href='data:application/manifest+json,{"name":"Jardín OS","short_name":"Jardín OS","start_url":".","display":"standalone","background_color":"#1e293b","theme_color":"#0f172a","description":"Gestión Integral de Vivero","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/1598/1598196.png","sizes":"192x192","type":"image/png"}]}'>
@@ -26,7 +26,6 @@
 <body id="appBody" class="branch-centro transition-colors duration-500 font-sans text-slate-800">
 
     <!-- === DATALIST FOR AUTOCOMPLETE === -->
-    <!-- Se mantiene para que los inputs de pedidos y repartos tengan autocompletado del stock -->
     <datalist id="stockItemsList"></datalist>
 
     <!-- === MAIN LAYOUT === -->
@@ -40,7 +39,7 @@
             </div>
             
             <div class="flex items-center gap-3">
-                 <!-- Botón Cambio de Sucursal (Movido al Header) -->
+                 <!-- Botón Cambio de Sucursal -->
                  <button id="branchToggleBtn" class="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full transition-colors border border-white/10 active:scale-95">
                     <span id="settingsBranchName" class="text-[10px] font-bold uppercase tracking-wider">Centro Tao</span>
                     <i class="fas fa-exchange-alt text-xs opacity-70"></i>
@@ -61,25 +60,19 @@
             <!-- 1. VIEW: TASKS -->
             <div id="view-tasks" class="view-section scroll-area hidden p-4">
                 <div id="taskList" class="space-y-3">
-                    <!-- Skeleton Loader -->
                     <div class="animate-pulse bg-white h-24 rounded-xl"></div>
                 </div>
             </div>
 
-            <!-- 2. VIEW: PROCEDURES (Incluye Scripts/Speech) -->
+            <!-- 2. VIEW: PROCEDURES -->
             <div id="view-procedures" class="view-section scroll-area hidden p-4">
-                <!-- Tabs Superiores -->
                 <div class="flex p-1 bg-slate-200 rounded-xl mb-4">
                     <button onclick="UI.switchProceduresTab('protocols')" id="tab-protocols" class="flex-1 py-2 rounded-lg text-sm font-bold text-slate-600 transition-all bg-white shadow-sm">Protocolos</button>
                     <button onclick="UI.switchProceduresTab('speech')" id="tab-speech" class="flex-1 py-2 rounded-lg text-sm font-bold text-slate-500 transition-all">Speech Ventas</button>
                 </div>
-
-                <!-- Lista Protocolos -->
                 <div id="proceduresContainer" class="block">
                     <div id="proceduresList" class="space-y-4"></div>
                 </div>
-
-                <!-- Lista Speech (Antes Scripts) -->
                 <div id="scriptsContainer" class="hidden">
                     <div class="bg-purple-50 text-purple-800 text-xs p-3 rounded-xl mb-4 border border-purple-200 flex gap-2 items-center">
                         <i class="fas fa-lightbulb text-lg"></i>
@@ -89,7 +82,7 @@
                 </div>
             </div>
 
-            <!-- 3. VIEW: DELIVERY (Principal) -->
+            <!-- 3. VIEW: DELIVERY -->
             <div id="view-delivery" class="view-section scroll-area hidden p-4">
                 <div id="deliveryList" class="space-y-4"></div>
             </div>
@@ -99,7 +92,7 @@
                 <div id="notesList" class="grid gap-4"></div>
             </div>
 
-            <!-- 5. VIEW: ORDERS (Compras Internas) -->
+            <!-- 5. VIEW: ORDERS -->
             <div id="view-orders" class="view-section scroll-area hidden p-4">
                 <div class="bg-blue-50 border border-blue-200 text-blue-800 p-3 rounded-xl mb-4 text-xs flex items-center justify-center gap-2 text-center font-medium">
                     <i class="fas fa-shopping-basket"></i> Solicitudes de compra internas
@@ -111,39 +104,30 @@
 
         <!-- BOTTOM NAVIGATION BAR -->
         <nav class="bottom-nav fixed bottom-0 left-0 w-full flex justify-around items-center z-30 px-2">
-            <!-- 1. Procedimientos (Movido al inicio) -->
             <button onclick="UI.nav('procedures')" id="nav-procedures" class="nav-btn w-1/5 flex flex-col items-center justify-center h-full pt-2">
                 <i class="fas fa-book text-xl mb-1"></i>
                 <span class="text-[10px] font-medium">Procedimientos</span>
             </button>
-            
-            <!-- 2. Tareas (Movido a la segunda posición) -->
             <button onclick="UI.nav('tasks')" id="nav-tasks" class="nav-btn w-1/5 flex flex-col items-center justify-center h-full pt-2">
                 <i class="fas fa-tasks text-xl mb-1"></i>
                 <span class="text-[10px] font-medium">Tareas</span>
             </button>
-
-            <!-- 3. Repartos (Central) -->
             <div class="w-1/5 flex justify-center relative">
                 <button onclick="UI.nav('delivery')" id="nav-delivery" class="nav-btn-center">
                     <i class="fas fa-truck text-2xl"></i>
                 </button>
             </div>
-
-            <!-- 4. Notas -->
             <button onclick="UI.nav('notes')" id="nav-notes" class="nav-btn w-1/5 flex flex-col items-center justify-center h-full pt-2">
                 <i class="fas fa-sticky-note text-xl mb-1"></i>
                 <span class="text-[10px] font-medium">Notas</span>
             </button>
-
-            <!-- 5. Pedidos -->
             <button onclick="UI.nav('orders')" id="nav-orders" class="nav-btn w-1/5 flex flex-col items-center justify-center h-full pt-2">
                 <i class="fas fa-shopping-basket text-xl mb-1"></i>
                 <span class="text-[10px] font-medium">Pedidos</span>
             </button>
         </nav>
 
-        <!-- FAB (Floating Action Button) -->
+        <!-- FAB -->
         <div id="fabContainer" class="fixed bottom-[90px] right-4 z-20 transition-transform duration-300">
             <button id="mainFab" class="w-12 h-12 rounded-full text-white shadow-lg flex items-center justify-center text-xl active:scale-90 transition-transform hover:shadow-xl" style="background-color: var(--accent);">
                 <i class="fas fa-plus"></i>
@@ -155,15 +139,13 @@
     <!-- === MODALS === -->
     <div id="modalOverlay" class="hidden fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center sm:p-4 backdrop-blur-sm">
         
-        <!-- MODAL: SETTINGS (Reemplazo de Sidebar) -->
+        <!-- MODAL: SETTINGS -->
         <div id="modal-settings" class="bg-white w-full sm:max-w-xs sm:rounded-2xl rounded-t-2xl shadow-2xl overflow-hidden hidden transform transition-transform duration-300 translate-y-full sm:translate-y-0 pb-6">
             <div class="p-5 border-b border-slate-100 flex justify-between items-center">
                 <h2 class="font-bold text-slate-800">Ajustes</h2>
                 <button class="modal-close text-slate-400"><i class="fas fa-times"></i></button>
             </div>
             <div class="p-5 space-y-3">
-                <!-- (Sección de Sucursal eliminada porque ahora está en el Header) -->
-
                 <div class="text-xs font-bold text-slate-400 uppercase">Sistema</div>
                 <button onclick="window.downloadBackup()" class="w-full py-3 px-4 rounded-xl bg-blue-50 text-blue-600 font-bold flex items-center gap-3 text-sm">
                     <i class="fas fa-cloud-download-alt"></i> <span>Descargar Backup JSON</span>
@@ -171,7 +153,6 @@
                 <button id="wakeLockBtn" class="w-full py-3 px-4 rounded-xl bg-slate-100 text-slate-500 font-bold flex items-center gap-3 text-sm">
                     <i class="far fa-moon"></i> <span>Pantalla: Automática</span>
                 </button>
-                
                 <div class="text-center mt-4 pt-4 border-t border-slate-50">
                     <p class="text-[10px] text-slate-400">Jardín OS v11.1 &bull; <span id="connectionStatus">Conectado</span></p>
                 </div>
@@ -228,11 +209,27 @@
             </div>
         </div>
 
-        <!-- MODAL: ORDER & DELIVERY (SHARED STRUCTURE) -->
+        <!-- MODAL: ORDER -->
         <div id="modal-orders" class="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl shadow-2xl overflow-hidden hidden transform transition-transform duration-300 translate-y-full sm:translate-y-0">
-            <div class="p-5 flex flex-col h-[80vh] sm:h-auto">
+            <div class="p-5 flex flex-col h-[85vh] sm:h-auto">
                 <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2 flex-none" id="orderModalTitle"><i class="fas fa-shopping-basket text-blue-600"></i> Nuevo Pedido</h2>
                 
+                <!-- CAMBIO 3: Tipo de Pedido, Distribuidor y Ticket -->
+                <div class="flex-none mb-3 space-y-2">
+                    <label class="block text-xs font-bold text-slate-400 uppercase">Configuración</label>
+                    <div class="flex gap-2">
+                        <select id="orderType" class="flex-grow p-3 bg-slate-50 rounded-xl border border-slate-200 outline-none text-xs font-bold text-slate-700">
+                            <option value="internal_center_to_branch">Centro a Ejemplares</option>
+                            <option value="internal_branch_to_center">Ejemplares a Centro</option>
+                            <option value="distributor">Distribuidor</option>
+                        </select>
+                        <!-- Input Distribuidor (Oculto por defecto, controlado por JS) -->
+                        <input type="text" id="orderDistributor" class="hidden flex-grow p-3 bg-slate-50 rounded-xl border border-slate-200 outline-none text-xs" placeholder="Nombre Distrib.">
+                    </div>
+                    <!-- Input Ticket -->
+                    <input type="text" id="orderTicket" class="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 outline-none text-xs" placeholder="N° Ticket Venta (Opcional)">
+                </div>
+
                 <div class="flex-grow overflow-y-auto pr-2 space-y-2 mb-4" id="orderItemsContainer"></div>
                 
                 <button onclick="window.addOrderRow()" class="mb-4 py-2 px-4 rounded-lg border-2 border-dashed border-slate-300 text-slate-500 font-bold hover:border-blue-400 hover:text-blue-500 transition-colors w-full">+ Agregar Ítem</button>
@@ -247,7 +244,7 @@
 
         <!-- MODAL: DELIVERY -->
         <div id="modal-delivery" class="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl shadow-2xl overflow-hidden hidden transform transition-transform duration-300 translate-y-full sm:translate-y-0">
-            <div class="p-5 flex flex-col h-[80vh] sm:h-auto">
+            <div class="p-5 flex flex-col h-[85vh] sm:h-auto">
                 <h2 class="text-xl font-bold text-slate-800 mb-4 flex-none" id="delModalTitle">Nuevo Reparto</h2>
                 
                 <input type="hidden" id="delId">
@@ -256,8 +253,11 @@
                     <input type="text" id="delClient" class="w-full p-3 bg-slate-50 rounded-xl outline-none border border-slate-200" placeholder="Cliente">
                     <div class="grid grid-cols-2 gap-3">
                         <input type="tel" id="delPhone" class="p-3 bg-slate-50 rounded-xl outline-none border border-slate-200 text-sm" placeholder="Teléfono">
-                        <input type="text" id="delWhen" class="p-3 bg-slate-50 rounded-xl outline-none border border-slate-200 text-sm" placeholder="Horario">
+                        <!-- CAMBIO 2: Vendedor -->
+                        <input type="text" id="delSalesperson" class="p-3 bg-slate-50 rounded-xl outline-none border border-slate-200 text-sm" placeholder="Vendedor">
                     </div>
+                    <!-- CAMBIO 2: Hora -> Fecha y Hora -->
+                    <input type="text" id="delWhen" class="p-3 bg-slate-50 rounded-xl outline-none border border-slate-200 text-sm w-full" placeholder="Fecha y Hora de entrega">
                     <input type="text" id="delWhere" class="w-full p-3 bg-slate-50 rounded-xl outline-none border border-slate-200 text-sm" placeholder="Dirección">
                 </div>
 
@@ -288,7 +288,11 @@
         <div id="modal-notes" class="bg-yellow-50 w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl shadow-2xl border-t-4 border-yellow-400 hidden transform transition-transform duration-300 translate-y-full sm:translate-y-0">
             <div class="p-5">
                 <h2 class="text-xl font-bold text-yellow-800 mb-4">Nueva Nota</h2>
-                <select id="noteType" class="w-full p-2 mb-4 bg-yellow-100 border-none rounded text-yellow-900 font-bold"><option value="normal">General</option><option value="billing">Cobranza $$</option></select>
+                <!-- CAMBIO 2: Cobranza por Carrito -->
+                <select id="noteType" class="w-full p-2 mb-4 bg-yellow-100 border-none rounded text-yellow-900 font-bold">
+                    <option value="normal">General</option>
+                    <option value="cart">Carrito</option>
+                </select>
                 <textarea id="noteContent" rows="6" class="w-full bg-transparent text-xl text-slate-700 placeholder-yellow-800/30 outline-none leading-relaxed" placeholder="Escribe aquí..."></textarea>
                 <div class="flex gap-2 mt-4">
                     <button class="modal-close flex-1 py-3 text-yellow-700 font-bold">Cancelar</button>
