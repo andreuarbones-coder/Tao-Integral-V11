@@ -20,10 +20,11 @@ body.branch-centro {
     --accent: #10b981;    /* Emerald 500 */
 }
 
+/* CAMBIO 1 y 4: Tema Ejemplares actualizado a Naranjas */
 body.branch-ejemplares {
-    --primary: #312e81;   /* Indigo 900 */
-    --secondary: #eef2ff; /* Indigo 50 */
-    --accent: #6366f1;    /* Indigo 500 */
+    --primary: #c2410c;   /* Orange 700 */
+    --secondary: #fff7ed; /* Orange 50 */
+    --accent: #f97316;    /* Orange 500 */
 }
 
 /* === Utilidades === */
